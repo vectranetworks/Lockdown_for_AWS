@@ -157,3 +157,4 @@ var/
 .serverless
 aws_remediate/node_modules/
 aws_remediate/package-lock.json
+.DS_Store
