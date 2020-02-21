@@ -26,6 +26,17 @@ provider:
   stage: dev
   region: us-west-2
   profile: se-prod
+  memorySize: 512 # Default memory size for all functions unless overridden below.
+  timeout: 10 # Default timeout for all functions.
+  tracing:
+    lambda: true # this will enable x ray tracing across all functions.
+
+  stackTags:
+    DeployedWith: 'Serverless Framework'
+    DeployedBy: 'Craig Simon'
+
+
+
 
 # you can overwrite defaults here
 #  stage: dev
@@ -63,9 +74,34 @@ provider:
 functions:
   queueWriter:
     handler: queueWriter.main.main
+    name: ${self:custom.baseName}--queueWriter--${self:custom.stage}
+    description: queueWriter receives ASFF formatted findings, verifies the validity of the event, then adds it to the eventQueue SQS Queue.
+    memorySize: 128
 
   routerLambda:
     handler: routerLambda.main.main
+    name: ${self:custom.baseName}--routerLambda--${self:custom.stage}
+    description: routerLambda take messages off of the eventQueue, evaluates the event, and if the host requires remediation, it will send the event to the proper lambda to perform the remediation.
+    memorySize: 128
+
+  stopLambda:
+    handler: stopLambda.main.main
+    name: ${self:custom.baseName}--stopLambda--${self:custom.stage}
+    description: stopLambda is called by routerLambda to manage all instance stop operations.
+    memorySize: 128
+
+  terminateLambda:
+    handler: terminateLambda.main.main
+    name: ${self:custom.baseName}--terminateLambda--${self:custom.stage}
+    description: terminateLambda is called by routerLambda to manage all instance termination operations.
+    memorySize: 128
+
+  isolateLambda:
+    handler: isolateLambda.main.main
+    name: ${self:custom.baseName}--isoalteLambda--${self:custom.stage}
+    description: isolateLambda is called by routerLambda to manage all security group modification operations.
+    memorySize: 128
+
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
@@ -106,6 +142,43 @@ functions:
 #    environment:
 #      variable2: value2
 
+resources:
+  Resources:
+    eventSQSDlqQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        MessageRetentionPeriod: 1209600 # this is 14 days.
+
+    eventSQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        DelaySeconds: 0 # no delay before items are available in the queue.
+        MessageRetentionPeriod: 1209600 # this is 14 days.
+        RedrivePolicy:
+          deadLetterTargetArn:
+            "Fn::GetAtt":
+              - eventSQSDlqQueue
+              - Arn
+          maxReceiveCount: 10
+
+  Outputs:
+    eventSQSArn:
+      Description: The ARN of the eventSQSQueue.
+      Value:
+        'Fn::GetAtt': [eventSQSQueue, Arn]
+
+    eventSQSSlqQueue:
+      Description: The ARN of the DLQ for the eventSQSQueue.
+      Value:
+        'Fn::GetAtt': [eventSQSDlqQueue, Arn]
+
+
+
+
+        # Tags:
+        #   -
+        #     Key: 'Name'
+        #     Value: 'Craigs Queue'
 # you can add CloudFormation resource templates here
 #resources:
 #  Resources:
@@ -120,8 +193,12 @@ functions:
 
 plugins:
   - serverless-python-requirements
-
-
 custom:
   pythonRequirements:
     dockerizePip: true
+
+# Start customization here
+  baseName: aws-remediate
+  stage: ${opt:stage, self:provider.stage}
+
+  # End customization here.
