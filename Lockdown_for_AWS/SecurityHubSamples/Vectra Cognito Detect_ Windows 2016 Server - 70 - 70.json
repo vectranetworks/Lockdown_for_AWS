@@ -1,0 +1,37 @@
+{
+  "SchemaVersion": "2018-10-08",
+  "Id": "v1/VHEfoobarf57bb1b30ae09b2b5311f5125eb32bbd/29294990",
+  "ProductArn": "arn:aws:securityhub:us-west-2:602592549188:product/602592549188/default",
+  "GeneratorId": "host",
+  "AwsAccountId": "602592549188",
+  "Types": [
+    "Unusual Behaviors/Network Flow"
+  ],
+  "CreatedAt": "2020-02-24T19:43:31.164903Z",
+  "UpdatedAt": "2020-02-24T19:43:31.164903Z",
+  "Severity": {
+    "Product": 9.5,
+    "Normalized": 95
+  },
+  "Confidence": 70,
+  "Criticality": 70,
+  "Title": "Vectra Cognito Detect: Windows 2016 Server - 70 - 70",
+  "Description": "Cognito host alert for Windows 2016 Server",
+  "SourceUrl": "https://vectra.brain/hosts/29294990",
+  "ProductFields": {
+    "aws/securityhub/SeverityLabel": "CRITICAL",
+    "aws/securityhub/ProductName": "Default",
+    "aws/securityhub/CompanyName": "Personal",
+    "aws/securityhub/FindingId": "arn:aws:securityhub:us-west-2:602592549188:product/602592549188/default/v1/VHEfoobarf57bb1b30ae09b2b5311f5125eb32bbd/29294990"
+  },
+  "Resources": [
+    {
+      "Type": "AwsEc2Instance",
+      "Id": "arn:aws:ec2:us-west-1:602592549188:instance/i-05bb9da91fb4c644f",
+      "Partition": "aws",
+      "Region": "us-west-2"
+    }
+  ],
+  "WorkflowState": "NEW",
+  "RecordState": "ACTIVE"
+}

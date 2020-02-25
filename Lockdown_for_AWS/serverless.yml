@@ -11,7 +11,7 @@
 #
 # Happy Coding!
 
-service: aws-remediate
+service: lockdown-for-aws
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
 #org: your-org-name
@@ -31,9 +31,31 @@ provider:
   tracing:
     lambda: true # this will enable x ray tracing across all functions.
 
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - xray:PutTelemetryRecords
+        - xray:PutTraceSegments
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - iam:simulatePrincipalPolicy
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - sns:Publish
+      Resource:
+        - ${self:custom.snsRemediationNotificationARN}
+
+
   stackTags:
     DeployedWith: 'Serverless Framework'
     DeployedBy: 'Craig Simon'
+
+  environment:
+    MINIMUM_THREAT_SCORE_FOR_REMEDIATION: ${self:custom.minimum_threat_score_for_remediation}
+    MINIMUM_CERTAINTY_SCORE_FOR_REMEDIATION: ${self:custom.minimum_certainty_score_for_remediation}
+    REMEDIATION_TYPE: ${self:custom.remediation_type}
 
 
 
@@ -76,31 +98,102 @@ functions:
     handler: queueWriter.main.main
     name: ${self:custom.baseName}--queueWriter--${self:custom.stage}
     description: queueWriter receives ASFF formatted findings, verifies the validity of the event, then adds it to the eventQueue SQS Queue.
-    memorySize: 128
+    memorySize: 256
+    iamRoleStatementsInherit: true
+    iamRoleStatements:  
+      - Effect: "Allow"
+        Action:
+          - sqs:*
+        Resource:   # The resource ALWAYS needs to point to an ARN.  Hence the GetAtt call below.
+          Fn::GetAtt:
+            - eventSQSQueue
+            - Arn
+
+      - Effect: "Allow"
+        Action:
+          - sqs:*
+        Resource:
+          Fn::GetAtt:
+            - eventSQSDlq
+            - Arn
+
+
+
 
   routerLambda:
     handler: routerLambda.main.main
     name: ${self:custom.baseName}--routerLambda--${self:custom.stage}
     description: routerLambda take messages off of the eventQueue, evaluates the event, and if the host requires remediation, it will send the event to the proper lambda to perform the remediation.
     memorySize: 128
+    iamRoleStatementsInherit: true
+    iamRoleStatements:  
+      - Effect: "Allow"
+        Action:
+          - sqs:*
+        Resource:   # The resource ALWAYS needs to point to an ARN.  Hence the GetAtt call below.
+          Fn::GetAtt:
+            - eventSQSQueue
+            - Arn
+
+      - Effect: "Allow"
+        Action:
+          - sqs:*
+        Resource:
+          Fn::GetAtt:
+            - eventSQSDlq
+            - Arn
 
   stopLambda:
     handler: stopLambda.main.main
     name: ${self:custom.baseName}--stopLambda--${self:custom.stage}
     description: stopLambda is called by routerLambda to manage all instance stop operations.
     memorySize: 128
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - ec2:CreateSnapshot
+          - ec2:CreateTags
+          - ec2:DescribeInstances
+          - ec2:DescribeTags
+          - ec2:StopInstances
+
+        Resource: "*"
 
   terminateLambda:
     handler: terminateLambda.main.main
     name: ${self:custom.baseName}--terminateLambda--${self:custom.stage}
     description: terminateLambda is called by routerLambda to manage all instance termination operations.
     memorySize: 128
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - ec2:CreateSnapshot
+          - ec2:CreateTags
+          - ec2:DescribeInstances
+          - ec2:DescribeTags
+          - ec2:TerminateInstances
+
+        Resource: "*"
 
   isolateLambda:
     handler: isolateLambda.main.main
     name: ${self:custom.baseName}--isoalteLambda--${self:custom.stage}
     description: isolateLambda is called by routerLambda to manage all security group modification operations.
     memorySize: 128
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - ec2:CreateSnapshot
+          - ec2:CreateTags
+          - ec2:DescribeInstances
+          - ec2:DescribeSecurityGroups
+          - ec2:DescribeTags
+          - ec2:AuthorizeSecurityGroupEgress  # For EC2-VPC Only
+          - ec2:RevokeSecurityGroupEgress  # For EC2-VPC Only
+        Resource: "*"
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
@@ -144,7 +237,7 @@ functions:
 
 resources:
   Resources:
-    eventSQSDlqQueue:
+    eventSQSDlq:
       Type: AWS::SQS::Queue
       Properties:
         MessageRetentionPeriod: 1209600 # this is 14 days.
@@ -157,7 +250,7 @@ resources:
         RedrivePolicy:
           deadLetterTargetArn:
             "Fn::GetAtt":
-              - eventSQSDlqQueue
+              - eventSQSDlq
               - Arn
           maxReceiveCount: 10
 
@@ -170,7 +263,7 @@ resources:
     eventSQSSlqQueue:
       Description: The ARN of the DLQ for the eventSQSQueue.
       Value:
-        'Fn::GetAtt': [eventSQSDlqQueue, Arn]
+        'Fn::GetAtt': [eventSQSDlq, Arn]
 
 
 
@@ -193,12 +286,20 @@ resources:
 
 plugins:
   - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-iam-roles-per-function
 custom:
   pythonRequirements:
     dockerizePip: true
 
 # Start customization here
-  baseName: aws-remediate
+  baseName: lockdown-for-aws
   stage: ${opt:stage, self:provider.stage}
+  minimum_threat_score_for_remediation: 50
+  minimum_certainty_score_for_remediation: 50
+  remediation_type: stop  # choices are stop, terminate, isolate
+  securityHubCustomActionARN: arn:aws:securityhub:us-west-2:602592549188:action/custom/CognitoDetectEvent
+  snsRemediationNotificationARN: arn:aws:sns:us-west-2:602592549188:Vectra_cloud_operations
+
 
   # End customization here.

@@ -1,5 +1,0 @@
-black==19.10b0
-boto3==1.10.43
-ipython==7.10.2
-pylint==2.4.4
-requests==2.22.0
