@@ -155,6 +155,9 @@ var/
 
 # Serverless directories
 .serverless
-aws_remediate/node_modules/
-aws_remediate/package-lock.json
+Lockdown_for_AWS/node_modules/
+Lockdown_for_AWS/package-lock.json
 .DS_Store
+Lockdown_for_AWS/.requirements.zip
+Lockdown_for_AWS/package-lock.json
+Lockdown_for_AWS/package.json

@@ -4,9 +4,7 @@
   "ProductArn": "arn:aws:securityhub:us-west-2:602592549188:product/602592549188/default",
   "GeneratorId": "host",
   "AwsAccountId": "602592549188",
-  "Types": [
-    "Unusual Behaviors/Network Flow"
-  ],
+  "Types": ["Unusual Behaviors/Network Flow"],
   "CreatedAt": "2020-02-24T19:43:31.165509Z",
   "UpdatedAt": "2020-02-24T19:43:31.165509Z",
   "Severity": {
