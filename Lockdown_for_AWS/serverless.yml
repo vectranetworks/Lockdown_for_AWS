@@ -30,6 +30,7 @@ provider:
   timeout: 10 # Default timeout for all functions.
   tracing:
     lambda: true # this will enable x ray tracing across all functions.
+  versionFunctions: false
 
   iamRoleStatements:
     - Effect: "Allow"
@@ -47,17 +48,18 @@ provider:
       Resource:
         - ${self:custom.snsRemediationNotificationARN}
 
-
   stackTags:
-    DeployedWith: 'Serverless Framework'
-    DeployedBy: 'Craig Simon'
+    DeployedWith: "Serverless Framework"
+    DeployedBy: "Craig Simon"
 
   environment:
     MINIMUM_THREAT_SCORE_FOR_REMEDIATION: ${self:custom.minimum_threat_score_for_remediation}
     MINIMUM_CERTAINTY_SCORE_FOR_REMEDIATION: ${self:custom.minimum_certainty_score_for_remediation}
     REMEDIATION_TYPE: ${self:custom.remediation_type}
     DEPLOYMENT_STAGE: ${self:custom.stage}
-
+    STOP_LAMBDA_NAME: ${self:custom.baseName}--stopLambda--${self:custom.stage}
+    TERMINATE_LAMBDA_NAME: ${self:custom.baseName}--terminateLambda--${self:custom.stage}
+    ISOLATE_LAMBDA_NAME: ${self:custom.baseName}--isoalteLambda--${self:custom.stage}
 
 # you can overwrite defaults here
 #  stage: dev
@@ -99,11 +101,11 @@ functions:
     description: queueWriter receives ASFF formatted findings, verifies the validity of the event, then adds it to the eventQueue SQS Queue.
     memorySize: 256
     iamRoleStatementsInherit: true
-    iamRoleStatements:  
+    iamRoleStatements:
       - Effect: "Allow"
         Action:
           - sqs:*
-        Resource:   # The resource ALWAYS needs to point to an ARN.  Hence the GetAtt call below.
+        Resource: # The resource ALWAYS needs to point to an ARN.  Hence the GetAtt call below.
           Fn::GetAtt:
             - eventSQSQueue
             - Arn
@@ -116,18 +118,22 @@ functions:
             - eventSQSDlq
             - Arn
 
-
   routerLambda:
     handler: routerLambda.main.main
     name: ${self:custom.baseName}--routerLambda--${self:custom.stage}
     description: routerLambda take messages off of the eventQueue, evaluates the event, and if the host requires remediation, it will send the event to the proper lambda to perform the remediation.
     memorySize: 128
     iamRoleStatementsInherit: true
-    iamRoleStatements:  
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource: "*"
+
       - Effect: "Allow"
         Action:
           - sqs:*
-        Resource:   # The resource ALWAYS needs to point to an ARN.  Hence the GetAtt call below.
+        Resource: # The resource ALWAYS needs to point to an ARN.  Hence the GetAtt call below.
           Fn::GetAtt:
             - eventSQSQueue
             - Arn
@@ -194,57 +200,12 @@ functions:
           - ec2:DescribeInstances
           - ec2:DescribeSecurityGroups
           - ec2:DescribeTags
-          - ec2:AuthorizeSecurityGroupEgress  # For EC2-VPC Only
-          - ec2:RevokeSecurityGroupEgress  # For EC2-VPC Only
+          - ec2:AuthorizeSecurityGroupEgress # For EC2-VPC Only
+          - ec2:RevokeSecurityGroupEgress # For EC2-VPC Only
         Resource: "*"
-
 
 resources:
   Resources:
-
-    # warmupRole:
-    #   Type: AWS::IAM::Role
-    #   Properties:
-    #     Path: /Vectra/
-    #     RoleName: LockdownWarmUpRole
-    #     AssumeRolePolicyDocument:
-    #       Version: '2012-10-17'
-    #       Statement:
-    #         - Effect: Allow
-    #           Principal:
-    #             Service:
-    #               - lambda.amazonaws.com
-    #           Action: sts:AssumeRole
-    #     Policies:
-    #       - PolicyName: LockdownWarmupPolicy
-    #         PolicyDocument:
-    #           Version: '2012-10-17'
-    #           Statement:
-    #             - Effect: Allow
-    #               Action:
-    #                 - logs:CreateLogGroup
-    #                 - logs:CreateLogStream
-    #                 - logs:PutLogEvents
-    #               Resource: 
-    #                 - 'Fn::Join':
-    #                   - ':'
-    #                   -
-    #                     - 'arn:aws:logs'
-    #                     - Ref: 'AWS::Region'
-    #                     - Ref: 'AWS::AccountId'
-    #                     - 'log-group:/aws/lambda/*:*:*'
-    #             - Effect: Allow
-    #               Action:
-    #                 - 'lambda:InvokeFunction'
-    #               Resource:
-    #                 - Fn::Join:
-    #                   - ':'
-    #                   - - arn:aws:lambda
-    #                     - Ref: AWS::Region
-    #                     - Ref: AWS::AccountId
-    #                     - function ${self:custom.baseName}--*--${self:custom.stage}
-
-
     eventSQSDlq:
       Type: AWS::SQS::Queue
       Properties:
@@ -268,13 +229,12 @@ resources:
     eventSQSArn:
       Description: The ARN of the eventSQSQueue.
       Value:
-        'Fn::GetAtt': [eventSQSQueue, Arn]
+        "Fn::GetAtt": [eventSQSQueue, Arn]
 
     eventSQSSlqQueue:
       Description: The ARN of the DLQ for the eventSQSQueue.
       Value:
-        'Fn::GetAtt': [eventSQSDlq, Arn]
-
+        "Fn::GetAtt": [eventSQSDlq, Arn]
         # Tags:
         #   -
         #     Key: 'Name'
@@ -301,27 +261,33 @@ plugins:
   - serverless-python-requirements
   - serverless-pseudo-parameters
   - serverless-iam-roles-per-function
+  - serverless-prune-plugin
+  - serverless-cloudformation-parameters
 custom:
   # warmup:
   #   enabled: true  # Whether to warm up functions or not.
   #   folderName: '_warmup'  # Name of the folder for the generated warmup Lambda
   #   cleanFolder: true  # Deletes the generated warmup lambda
   #   prewarm: true
-  #   events: 
+  #   events:
   #     - schedule: rate(5 minutes)
 
   pythonRequirements:
     dockerizePip: true
     zip: true
 
-# Start customization here
-  baseName: lockdown-for-aws
+  parameters:
+    baseName:
+      Default: lockdown-for-aws
+      Type: String
+      Description: All created objects will be prepended with the baseName.
+
+  # Start customization here
+  baseName: Lockdown-for-AWS
   stage: ${opt:stage, self:provider.stage}
   minimum_threat_score_for_remediation: 50
   minimum_certainty_score_for_remediation: 50
-  remediation_type: stop  # choices are stop, terminate, isolate
+  remediation_type: terminate # choices are stop, terminate, isolate
   securityHubCustomActionARN: arn:aws:securityhub:us-west-2:602592549188:action/custom/CognitoDetectEvent
   snsRemediationNotificationARN: arn:aws:sns:us-west-2:602592549188:Vectra_cloud_operations
-
-
   # End customization here.
