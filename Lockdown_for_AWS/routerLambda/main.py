@@ -143,11 +143,11 @@ def main(event, context):
     string_response = lambda_response["Payload"].read().decode("utf-8")
     parsed_response = json.loads(string_response)
     logger.debug("Lambda invocation message {}".format(parsed_response))
-    logger.debug(
-        "keyed into body / stoppinginstances [0] {}".format(
-            parsed_response["body"][0]["StoppingInstances"]
-        )
-    )
+    # logger.debug(
+    #     "keyed into body / stoppinginstances [0] {}".format(
+    #         parsed_response["body"][0]["StoppingInstances"]
+    #     )
+    # )
     # Let's figure out what the state transition is.
 
     return parsed_response

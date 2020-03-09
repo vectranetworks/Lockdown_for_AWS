@@ -113,6 +113,7 @@ def main(event, context):
     
     
     """
+    # Start logging some stats of the event.
     xray_recorder.begin_subsegment("main")
     logger.debug(
         "minimum_threat_score_for_remediation value received from the execution envrionment -> {}. Value appears valid".format(
@@ -137,18 +138,40 @@ def main(event, context):
             context.get_remaining_time_in_millis()
         )
     )
+    # End logging
 
-    aws_request_id = context.aws_request_id
-    invoked_function_arn = context.invoked_function_arn
-    event_confidence = event["Confidence"]
-    event_criticality = event["Criticality"]
-    event_title = event["Title"]
+    # first let's determine the source of the event.  Either it's from SecHub or it's a test event.
 
-    logger.debug(
-        "Received event id={} event_confidence={} event_criticality={} event_title={}".format(
-            aws_request_id, event_confidence, event_criticality, event_title
-        )
-    )
+    try:
+        if event["source"] == "aws.securityhub":
+            logger.debug("Received an event from AWS SecurityHub")
+            aws_request_id = context.aws_request_id
+            invoked_function_arn = context.invoked_function_arn
+            event_confidence = event["detail"]["findings"][0]["Confidence"]
+            event_criticality = event["detail"]["findings"][0]["Criticality"]
+            event_title = event["detail"]["findings"][0]["Title"]
+            logger.debug(
+                "Received an event directly from Securiy H event id={} event_confidence={} event_criticality={} event_title={}".format(
+                    aws_request_id, event_confidence, event_criticality, event_title
+                )
+            )
+
+        elif "aws.securityhub" not in event:
+            logger.debug("Received a test event injected directly into queueWriter.")
+            aws_request_id = context.aws_request_id
+            invoked_function_arn = context.invoked_function_arn
+            event_confidence = event["Confidence"]
+            event_criticality = event["Criticality"]
+            event_title = event["Title"]
+            logger.debug(
+                "Received an injected test event id={} event_confidence={} event_criticality={} event_title={}".format(
+                    aws_request_id, event_confidence, event_criticality, event_title
+                )
+            )
+
+    except:
+        logger.error("unable to determine the source of the event.")
+
     xray_recorder.put_annotation("event_confidence", event_confidence)
     xray_recorder.put_annotation("event_criticality", event_criticality)
     xray_recorder.put_annotation(

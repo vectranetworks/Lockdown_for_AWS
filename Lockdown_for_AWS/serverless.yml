@@ -287,7 +287,7 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   minimum_threat_score_for_remediation: 50
   minimum_certainty_score_for_remediation: 50
-  remediation_type: terminate # choices are stop, terminate, isolate
+  remediation_type: stop # choices are stop, terminate, isolate
   securityHubCustomActionARN: arn:aws:securityhub:us-west-2:602592549188:action/custom/CognitoDetectEvent
   snsRemediationNotificationARN: arn:aws:sns:us-west-2:602592549188:Vectra_cloud_operations
   # End customization here.
