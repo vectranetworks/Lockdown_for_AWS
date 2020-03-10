@@ -1,0 +1,55 @@
+{
+  "version": "0",
+  "id": "93d1146a-3d8f-05de-e2ff-3493282e6770",
+  "detail-type": "Security Hub Findings - Custom Action",
+  "source": "aws.securityhub",
+  "account": "602592549188",
+  "time": "2020-03-09T21:16:31Z",
+  "region": "us-west-2",
+  "resources": [
+    "arn:aws:securityhub:us-west-2:602592549188:action/custom/CognitoDetect"
+  ],
+  "detail": {
+    "actionName": "CognitoDetectHost",
+    "actionDescription": "A host within CognitoDetect has a threat / certainty score.",
+    "findings": [
+      {
+        "ProductArn": "arn:aws:securityhub:us-west-2:602592549188:product/602592549188/default",
+        "Types": ["Unusual Behaviors/Network Flow"],
+        "SourceUrl": "https://vectra.brain/hosts/32",
+        "Description": "Cognito host alert for kbilko - CloudVMAL - Lab1",
+        "SchemaVersion": "2018-10-08",
+        "GeneratorId": "host",
+        "CreatedAt": "2020-03-03T20:10:10.422577Z",
+        "RecordState": "ACTIVE",
+        "Title": "Vectra Cognito Detect: kbilko - CloudVMAL - Lab1 - 95 - 79",
+        "Severity": { "Normalized": 95, "Product": 9.5 },
+        "UpdatedAt": "2020-03-09T20:47:11.478673Z",
+        "Confidence": 79,
+        "WorkflowState": "NEW",
+        "ProductFields": {
+          "aws/securityhub/FindingId": "arn:aws:securityhub:us-west-2:602592549188:product/602592549188/default/v1/VHEec256bf69cad66ab41fc36b17182ec96/32",
+          "aws/securityhub/SeverityLabel": "CRITICAL",
+          "aws/securityhub/ProductName": "Default",
+          "aws/securityhub/CompanyName": "Personal"
+        },
+        "AwsAccountId": "602592549188",
+        "Resources": [
+          {
+            "Partition": "aws",
+            "Type": "AwsEc2Instance",
+            "Region": "us-west-2",
+            "Id": "arn:aws:ec2:us-west-2:602592549188:instance/i-0dceef2c472446683"
+          },
+          {
+            "Type": "Other",
+            "Details": { "Other": { "Hostname": "kbilko - CloudVMAL - Lab1" } },
+            "Id": "602592549188:i-0dceef2c472446683"
+          }
+        ],
+        "Id": "v1/VHEec256bf69cad66ab41fc36b17182ec96/32",
+        "Criticality": 95
+      }
+    ]
+  }
+}
