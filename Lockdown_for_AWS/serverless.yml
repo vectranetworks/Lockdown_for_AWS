@@ -60,6 +60,7 @@ provider:
     STOP_LAMBDA_NAME: ${self:custom.baseName}--stopLambda--${self:custom.stage}
     TERMINATE_LAMBDA_NAME: ${self:custom.baseName}--terminateLambda--${self:custom.stage}
     ISOLATE_LAMBDA_NAME: ${self:custom.baseName}--isoalteLambda--${self:custom.stage}
+    NOTIFICATION_ARN: ${self:custom.snsRemediationNotificationARN}
 
 # you can overwrite defaults here
 #  stage: dev
