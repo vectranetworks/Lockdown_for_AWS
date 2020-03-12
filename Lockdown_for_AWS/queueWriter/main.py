@@ -147,6 +147,7 @@ def send_sqs_message(
     threat,
     certainty,
     instance_id,
+    instance_region,
     notification_arn,
     event_source,
 ):
@@ -166,6 +167,7 @@ def send_sqs_message(
             "threat": {"DataType": "Number", "StringValue": threat_string},
             "certainty": {"DataType": "Number", "StringValue": certainty_string},
             "instance_id": {"DataType": "String", "StringValue": instance_id},
+            "instance_region": {"DataType": "String", "StringValue": instance_region},
             "notification_arn": {"DataType": "String", "StringValue": notification_arn},
             "event_source": {"DataType": "String", "StringValue": event_source},
         },
@@ -220,6 +222,7 @@ def main(event, context):
             r"arn:aws:ec2:[a-z1-9-]+:\d+:instance\/(i-\w+)",
             event["detail"]["findings"][0]["Resources"][0]["Id"],
         ).group(1)
+        instance_region = event["detail"]["findings"][0]["Resources"][0]["Region"]
         message_body = event["detail"]
         logger.debug("instance_id is {}".format(instance_id))
         logger.debug(
@@ -239,6 +242,7 @@ def main(event, context):
         instance_id = re.search(
             r"arn:aws:ec2:[a-z1-9-]+:\d+:instance\/(i-\w+)", event["Resources"][0]["Id"]
         ).group(1)
+        instance_region = event["Resources"][0]["Region"]
         message_body = event
         logger.debug("instance_id is {}".format(instance_id))
 
@@ -310,6 +314,7 @@ def main(event, context):
                 event_criticality,
                 event_confidence,
                 instance_id,
+                instance_region,
                 notification_arn,
                 event_source,
             )

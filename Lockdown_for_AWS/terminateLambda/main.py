@@ -51,17 +51,16 @@ def main(event, context):
         )
     )
 
+    remediation_type = event["remediation_type"]
+    instance_id = event["instance_id"]
+    instance_region = event["instance_region"]
+
     if event["remediation_type"] == "terminate":
         logger.debug(
-            "terminateLambda received a terminate request terminating resource {}".format(
-                event["resource_id"]
+            "terminateLambda received a terminate request terminateping resource {}".format(
+                event["instance_id"]
             )
         )
-
-        instance_id = re.search(
-            r"arn:aws:ec2:[a-z1-9-]+:\d+:instance\/(i-\w+)", event["resource_id"]
-        ).group(1)
-        logger.debug("instance_id to stop is {}".format(instance_id))
 
         ec2_client = boto3.client("ec2")
         try:
@@ -71,7 +70,7 @@ def main(event, context):
             if "DryRunOperation" not in str(err):
                 raise
             logger.debug(
-                "instance terminate test was successful. now terminating instance."
+                "instance terminate test was successful. now terminateping instance."
             )
 
         try:
@@ -87,11 +86,3 @@ def main(event, context):
         "statusCode": 200,
     }
 
-    # Use this code if you don't use the http event with the LAMBDA-PROXY
-    # integration
-    """
-    return {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "event": event
-    }
-    """
