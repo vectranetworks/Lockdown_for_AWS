@@ -9,6 +9,7 @@ import sys
 import logging
 import re
 
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -17,6 +18,9 @@ from aws_xray_sdk.core import xray_recorder
 from aws_xray_sdk.core import patch_all
 
 patch_all()  # This will patch boto3 and any other supported client library to emit xray data.
+
+# Credentails for the lambdas are set via IAM roles in the serverless.yml file.
+
 lambda_client = boto3.client("lambda")  # client object to access lambda APIs
 sqs_client = boto3.client("sqs")
 
@@ -52,16 +56,18 @@ if minimum_threat_score_for_remediation is None:
     logger.critical(
         "CRITICAL ERROR! unable to obtain minumim_threat_score_for_remediation from the execution envrionment. Returned value is None."
     )
-    sys.exit(100)
+    raise RuntimeError(
+        "Unable to obtain minimum_threat_score_for_remediation from the execution envrionment."
+    )
 
 if minimum_threat_score_for_remediation < 0:
-    logger.error(
+    logger.warning(
         "minimum_threat_score_for_remediation is too low value < 0. setting to 0"
     )
     minimum_threat_score_for_remediation = 0
 
 elif minimum_threat_score_for_remediation > 99:
-    logger.error(
+    logger.warning(
         "minimum_threat_score_for_remediation is too high value > 99. setting to 99"
     )
     minimum_threat_score_for_remediation = 99
@@ -72,16 +78,16 @@ if minimum_certainty_score_for_remediation is None:
     logger.critical(
         "CRITICAL ERROR! unable to obtain minumim_certainty_score_for_remediation from the execution envrionment. Returned value is None."
     )
-    sys.exit(101)
+    raise.RuntimeError("unable to obtain minumim_certainty_score_for_remediation from the execution envrionment.")
 
 if minimum_certainty_score_for_remediation < 0:
-    logger.error(
+    logger.warning(
         "minimum_certainty_score_for_remediation is too low value < 0. setting to 0"
     )
     minimum_certainty_score_for_remediation = 0
 
 elif minimum_certainty_score_for_remediation > 99:
-    logger.error(
+    logger.warning(
         "minimum_certainty_score_for_remediation is too high value > 99. setting to 99"
     )
     minimum_certainty_score_for_remediation = 99
@@ -92,18 +98,20 @@ if remediation_type is None:
     logger.critical(
         "CRITICAL ERROR! unable to obtain remediation_type from the execution envrionment. Returned value is None."
     )
-    sys.exit(101)
-# I do not want to set a default, although a default of stop might make sence.
+    raise.RuntimeError("unable to obtain remediation_type from the execution envrionment.")
+# I do not want to set a default, although a default of stop might make sense.
 
 # Now let's add some annotations to the xray trace for this subsesgment.
-xray_recorder.put_annotation(
-    "minimum_threat_score_for_remediation", minimum_threat_score_for_remediation
-)
-xray_recorder.put_annotation(
-    "minimum_certainty_score_for_remediation", minimum_certainty_score_for_remediation
-)
-xray_recorder.put_annotation("remediation_type", remediation_type)
-xray_recorder.end_subsegment()
+
+if DEPLOYMENT_STAGE in ["dev", "test"]:
+    xray_recorder.put_annotation(
+        "minimum_threat_score_for_remediation", minimum_threat_score_for_remediation
+    )
+    xray_recorder.put_annotation(
+        "minimum_certainty_score_for_remediation", minimum_certainty_score_for_remediation
+    )
+    xray_recorder.put_annotation("remediation_type", remediation_type)
+    xray_recorder.end_subsegment()
 
 # Looking good, lets get some information from the event and context objects
 
@@ -185,26 +193,11 @@ def main(event, context):
     
     """
     # Start logging some stats of the event.
-    xray_recorder.begin_subsegment("main")
-    # logger.debug(
-    #     "minimum_threat_score_for_remediation value received from the execution envrionment -> {}. Value appears valid".format(
-    #         minimum_threat_score_for_remediation
-    #     )
-    # )
-    # logger.debug(
-    #     "minimum_certainty_score_for_remediation value received from the execution envrionment -> {}. Value appears valid".format(
-    #         minimum_certainty_score_for_remediation
-    #     )
-    # )
-    logger.debug("queueWriter received an event object -> {}".format(event))
-    # logger.debug(
-    #     "queueWriter received context object vars(context) -> {}".format(vars(context))
-    # )
-    # logger.debug(
-    #     "queueWriter received context object dir(context) -> {}".format(dir(context))
-    # )
-    logger.debug("start operating on aws_request_id {}".format(context.aws_request_id))
+    if DEPLOYMENT_STAGE in ["dev", "test"]:
+        xray_recorder.begin_subsegment("main")
 
+    logger.debug("queueWriter received an event object -> {}".format(event))
+    logger.debug("start operating on aws_request_id {}".format(context.aws_request_id))
     # End logging
 
     # first let's determine the source of the event.  Either it's from SecHub or it's a test event.
@@ -252,46 +245,47 @@ def main(event, context):
             )
         )
 
-    update_xray_annotations(
-        event_confidence,
-        event_criticality,
-        event_title,
-        remediation_type,
-        minimum_threat_score_for_remediation,
-        minimum_certainty_score_for_remediation,
-        event_source,
-    )
+    if DEPLOYMENT_STAGE in ["dev", "test"]:
+        update_xray_annotations(
+            event_confidence,
+            event_criticality,
+            event_title,
+            remediation_type,
+            minimum_threat_score_for_remediation,
+            minimum_certainty_score_for_remediation,
+            event_source,
+        )
 
     # Do we need to perform a remediation based on this event?
 
-    if (
-        event_criticality < minimum_threat_score_for_remediation
+    if not (
+        event_criticality >= minimum_threat_score_for_remediation
     ):  # NO REMEDIATION - threat score too low
         logger.info(
-            "event_criticality < minimum_threat_score_for_remediation - event_criticality too low! NO REMEDIATION will be performed on this event!"
+            "event_criticality is not >= minimum_threat_score_for_remediation - event_criticality too low! NO REMEDIATION will be performed on this event!"
         )
-        return "event_criticality < minimum_threat_score_for_remediation"  # if the threat score is too low we are done here.
+        body = "event_criticality is not >= minimum_threat_score_for_remediation"  # if the threat score is too low we are done here.
 
-    if (
-        event_confidence < minimum_certainty_score_for_remediation
+    if not (
+        event_confidence >= minimum_certainty_score_for_remediation
     ):  # NO REMEDIATION - certainty score too low
         logger.info(
-            "event_confidence < minimum_certainty_score_for_remediation - event_confidence too low! NO REMEDIATION will be performed on this event!"
+            "event_confidence is not >= minimum_certainty_score_for_remediation - event_confidence too low! NO REMEDIATION will be performed on this event!"
         )
-        return "event_confidence < minimum_certainty_score_for_remediation"  # if the certainty score is too low we are done here.
+        body = "event_confidence is not >= minimum_certainty_score_for_remediation"  # if the certainty score is too low we are done here.
 
-    if (
-        event_criticality >= minimum_threat_score_for_remediation
+    if not (
+        event_criticality <= minimum_threat_score_for_remediation
     ):  # REMEDIATION IS POSSIBLE
         logger.info(
-            "event_criticality >= minimum_threat_score_for_remediation - event_criticality will allow remediation"
+            "event_criticality is not <= minimum_threat_score_for_remediation - event_criticality will allow remediation"
         )
 
-        if (
-            event_confidence >= minimum_certainty_score_for_remediation
+        if not (
+            event_confidence <= minimum_certainty_score_for_remediation
         ):  # REMEDIATION IS REQUIRED!
             logger.info(
-                "event_confidence >= minimum_certainty_score_for_remediation - event_confidence will allow remediation"
+                "event_confidence is not <= minimum_certainty_score_for_remediation - event_confidence will allow remediation"
             )
             logger.info("host remediation is required for this event!!")
 
@@ -330,17 +324,14 @@ def main(event, context):
                 "event_confidence too low! NO REMEDIATION will be performed on this event!"
             )
 
-    body = {
-        "message": "This is queueWriter speaking! - Go Serverless v1.0! Your function executed successfully!",
-        "input": event,
-    }
+        if body == None:
+            body = {"message": "queueWriter ran successfully"}
+
     logger.debug(
         "runtime of function remaining -> {}".format(
             context.get_remaining_time_in_millis()
         )
     )
 
-    response = {"body": json.dumps(body)}
-
-    return response
+    return {"body": json.dumps(body)}
 
