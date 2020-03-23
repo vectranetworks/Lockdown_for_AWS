@@ -78,7 +78,9 @@ if minimum_certainty_score_for_remediation is None:
     logger.critical(
         "CRITICAL ERROR! unable to obtain minumim_certainty_score_for_remediation from the execution envrionment. Returned value is None."
     )
-    raise.RuntimeError("unable to obtain minumim_certainty_score_for_remediation from the execution envrionment.")
+    raise RuntimeError(
+        "unable to obtain minumim_certainty_score_for_remediation from the execution envrionment."
+    )
 
 if minimum_certainty_score_for_remediation < 0:
     logger.warning(
@@ -98,7 +100,9 @@ if remediation_type is None:
     logger.critical(
         "CRITICAL ERROR! unable to obtain remediation_type from the execution envrionment. Returned value is None."
     )
-    raise.RuntimeError("unable to obtain remediation_type from the execution envrionment.")
+    raise RuntimeError(
+        "unable to obtain remediation_type from the execution envrionment."
+    )
 # I do not want to set a default, although a default of stop might make sense.
 
 # Now let's add some annotations to the xray trace for this subsesgment.
@@ -108,7 +112,8 @@ if DEPLOYMENT_STAGE in ["dev", "test"]:
         "minimum_threat_score_for_remediation", minimum_threat_score_for_remediation
     )
     xray_recorder.put_annotation(
-        "minimum_certainty_score_for_remediation", minimum_certainty_score_for_remediation
+        "minimum_certainty_score_for_remediation",
+        minimum_certainty_score_for_remediation,
     )
     xray_recorder.put_annotation("remediation_type", remediation_type)
     xray_recorder.end_subsegment()
@@ -259,20 +264,41 @@ def main(event, context):
     # Do we need to perform a remediation based on this event?
 
     if not (
-        event_criticality >= minimum_threat_score_for_remediation
+        event_criticality <= minimum_threat_score_for_remediation
     ):  # NO REMEDIATION - threat score too low
+        logger.debug(
+            "event_criticality will allow remediation. event_criticality={} / minimum_threat_score_for_remediation={}".format(
+                event_criticality, minimum_threat_score_for_remediation
+            )
+        )
+
+    else:
         logger.info(
-            "event_criticality is not >= minimum_threat_score_for_remediation - event_criticality too low! NO REMEDIATION will be performed on this event!"
+            "event_criticality is {} >= minimum_threat_score_for_remediation is {} - event_criticality too low! NO REMEDIATION will be performed on this event!".format(
+                event_criticality, minimum_threat_score_for_remediation
+            )
         )
         body = "event_criticality is not >= minimum_threat_score_for_remediation"  # if the threat score is too low we are done here.
+        return {"body": json.dumps(body)}
 
     if not (
-        event_confidence >= minimum_certainty_score_for_remediation
+        event_confidence <= minimum_certainty_score_for_remediation
     ):  # NO REMEDIATION - certainty score too low
-        logger.info(
-            "event_confidence is not >= minimum_certainty_score_for_remediation - event_confidence too low! NO REMEDIATION will be performed on this event!"
+        logger.debug(
+            "event_certainity will allow remediation. event_certainty={} / minimum_certainty_score_for_remediation={}".format(
+                event_confidence, minimum_certainty_score_for_remediation
+            )
         )
-        body = "event_confidence is not >= minimum_certainty_score_for_remediation"  # if the certainty score is too low we are done here.
+
+    else:
+        logger.info(
+            "event_certainty is {} >= minimum_certainty_score_for_remediation is {} - event_certainty too low! NO REMEDIATION will be performed on this event!".format(
+                event_confidence, minimum_certainty_score_for_remediation
+            )
+        )
+
+        body = "event_certainty is not >= minimum_certainty_score_for_remediation"  # if the certainty score is too low we are done here.
+        return {"body": json.dumps(body)}
 
     if not (
         event_criticality <= minimum_threat_score_for_remediation
@@ -334,4 +360,3 @@ def main(event, context):
     )
 
     return {"body": json.dumps(body)}
-
