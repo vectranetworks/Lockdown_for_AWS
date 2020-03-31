@@ -37,7 +37,7 @@ Deployment Rights - Generally it's easiest to use an admin account to deploy loc
 
 Lambda Rights - The rights that are available to each Lambda have been reduced to what is necessary for the Lambda to operate.  Each Lambda has a IAM role that is created at deployment time, that contains the policy that the Lambda will use at execution time.
 
-
+A video demo of the setup and installation is available at https://vectra-public-files.s3-us-west-2.amazonaws.com/vectra_cloud_training/Lockdown+for+AWS+Installtion+Deployment.mp4
 
 ### Step by Step Instructions.
 
