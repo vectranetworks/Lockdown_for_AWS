@@ -5,7 +5,7 @@
 ## <center /> Installation and usage instructions
 
 <center /> Written by
-<center /> Craig Simon
+<center /> Vectra.AI
 
 <br /><br />
 Version 1.0
@@ -21,11 +21,23 @@ Version 1.0
 Lockdown for AWS is written in Python using the Serverless Framework.   It does require some prerequisites be installed, however I will walk you though the installation of the required prerequisites, setup and configuration of Lockdown for AWS, and deployment into your amazon AWS account.  These instructions will be based on the Mac OS X platform, however this will run under both Windows and Linux with some modifications of the instructions below.
 
 ### Requirements:
+
 - Python 3.8.
 - A new virtual environment - With some python modules.
 - A recent version of Node.JS.
 - Serverless Framework installed globally.
 - The AWSCLI installed and configured.
+- Proper rights within the AWS account to deploy / run.
+
+### A note regarding rights in AWS
+
+There are two "sets" of rights that are required to deploy Lockdown for AWS.  Once is the set of rights that are required to deploy, the second are the rights made available to a specific Lambda function.
+
+Deployment Rights - Generally it's easiest to use an admin account to deploy lockdown for aws.  There is a GitHub issue where a reduced set of rights can be used for deploy that is documented in this issue. https://github.com/serverless/serverless/issues/1439
+
+Lambda Rights - The rights that are available to each Lambda have been reduced to what is necessary for the Lambda to operate.  Each Lambda has a IAM role that is created at deployment time, that contains the policy that the Lambda will use at execution time.
+
+
 
 ### Step by Step Instructions.
 

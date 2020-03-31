@@ -24,7 +24,7 @@
         <h1 id="center--lockdown-for-aws"><center /> Lockdown for AWS</h1>
 <h2 id="center--installation-and-usage-instructions"><center /> Installation and usage instructions</h2>
 <center /> Written by
-<center /> Craig Simon
+<center /> Vectra.AI
 <p><br /><br />
 Version 1.0</p>
 <hr>
@@ -39,7 +39,12 @@ Version 1.0</p>
 <li>A recent version of Node.JS.</li>
 <li>Serverless Framework installed globally.</li>
 <li>The AWSCLI installed and configured.</li>
+<li>Proper rights within the AWS account to deploy / run.</li>
 </ul>
+<h3 id="a-note-regarding-rights-in-aws">A note regarding rights in AWS</h3>
+<p>There are two &quot;sets&quot; of rights that are required to deploy Lockdown for AWS.  Once is the set of rights that are required to deploy, the second are the rights made available to a specific Lambda function.</p>
+<p>Deployment Rights - Generally it's easiest to use an admin account to deploy lockdown for aws.  There is a GitHub issue where a reduced set of rights can be used for deploy that is documented in this issue. <a href="https://github.com/serverless/serverless/issues/1439">https://github.com/serverless/serverless/issues/1439</a></p>
+<p>Lambda Rights - The rights that are available to each Lambda have been reduced to what is necessary for the Lambda to operate.  Each Lambda has a IAM role that is created at deployment time, that contains the policy that the Lambda will use at execution time.</p>
 <h3 id="step-by-step-instructions">Step by Step Instructions.</h3>
 <ol>
 <li>
