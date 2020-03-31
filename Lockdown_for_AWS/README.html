@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title><center /> Lockdown for AWS</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="center--lockdown-for-aws"><center /> Lockdown for AWS</h1>
+<h2 id="center--installation-and-usage-instructions"><center /> Installation and usage instructions</h2>
+<center /> Written by
+<center /> Craig Simon
+<p><br /><br />
+Version 1.0</p>
+<hr>
+<div style="text-align: center">
+<h2 id="installation-steps">Installation steps.</h2>
+<div style="text-align: left">
+<p>Lockdown for AWS is written in Python using the Serverless Framework.   It does require some prerequisites be installed, however I will walk you though the installation of the required prerequisites, setup and configuration of Lockdown for AWS, and deployment into your amazon AWS account.  These instructions will be based on the Mac OS X platform, however this will run under both Windows and Linux with some modifications of the instructions below.</p>
+<h3 id="requirements">Requirements:</h3>
+<ul>
+<li>Python 3.8.</li>
+<li>A new virtual environment - With some python modules.</li>
+<li>A recent version of Node.JS.</li>
+<li>Serverless Framework installed globally.</li>
+<li>The AWSCLI installed and configured.</li>
+</ul>
+<h3 id="step-by-step-instructions">Step by Step Instructions.</h3>
+<ol>
+<li>
+<p>We will be using a package manager to install all the requirements.  On the Mac we are using HomeBrew.  On Linux, use the default package manager for your distribution, and on Windows, you can install Chocolaty.</p>
+</li>
+<li>
+<p>Install HomeBrew as per the instructions located at <a href="https://brew.sh/">HomeBrew</a></p>
+</li>
+<li>
+<p>Once homebrew is installed perform a
+<code>brew doctor</code> and a
+<code>brew update</code></p>
+</li>
+<li>
+<p>Once complete, let's install some software we need.</p>
+<p><code>brew install nodejs</code>
+<code>brew install pyenv</code>
+<code>brew install pipenv</code>
+<code>brew install git</code></p>
+<p>You can use any other methods that you are familiar with to build a python environment including virtualenv, poetry and others.  However in this guide we will be using pyenv and pipenv.</p>
+<p>You also need the docker desktop installed for your client OS.  It is available from here <a href="https://www.docker.com/products/docker-desktop">Docker Desktop</a></p>
+</li>
+<li>
+<p>Clone the Lockdown for AWS code to a directory on your local computer.</p>
+<p><code>git clone https://github.com/vectranetworks/Lockdown_for_AWS</code></p>
+</li>
+<li>
+<p>Cd twice into the code for Lockdown for AWS.  You are looking for the file <code>serverless.yml</code>  This is the system configuration file we will be editing soon.</p>
+</li>
+</ol>
+<p>CHECKPOINT #1
+At this point let's confirm that our prerequisites have installed properly.  First nodejs</p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+14.11.20.png" alt="checking Node and NPM versions"></p>
+<p>Now check pyenv and pipenv
+<img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+14.13.51.png" alt=""></p>
+<p>This checkpoint allows me to confirm that my prerequisites are installed and function properly.  If you are not seeing similar output, you will not be able to continue.</p>
+<ol start="7">
+<li>
+<p>Now let's install serverless framework into this location.  Issue a
+<code>npm install -g serverless</code></p>
+</li>
+<li>
+<p>Now install some needed plugins.
+<code>sls plugin install --name serverless-python-requirements</code>
+<code>sls plugin install --name serverless-iam-roles-per-function</code>
+<code>sls plugin install --name serverless-cloudformation-parameters</code>
+<code>sls plugin install --name serverless-pseudo-parameters</code>
+<img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+14.20.58.png" alt="Serverless plugin installation"></p>
+</li>
+</ol>
+<p>CHECKPOINT #2
+Let's make sure that the serverless framework is installed and functioning properly.</p>
+<p><code>sls info</code></p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+14.29.23.png" alt="">
+We would expect an error that says that lockdown does not exist, but this confirms that Serverless can communicate with AWS and our AWSCLI is configured properly.</p>
+<ol start="9">
+<li>Now let's install the needed python version and set up a virtualenv.  To use pyenv and pipenv
+<code>pyenv install 3.8.0</code>
+This will install python 3.8.0.  Now create a new virtualenv with
+<code>pipenv --python 3.8.0</code>
+then enter the new virtualenv with an
+<code>pipenv shell</code> and a
+<code>pipenv install</code></li>
+</ol>
+<p>CHECKPOINT #3</p>
+<ol start="10">
+<li>You will know that all the above steps have worked if you see that your python is running within a virtualenv.
+<img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+14.03.41.png" alt=""></li>
+</ol>
+<p>Assuming that all checkpoints 1-3 have passed properly, you are ready to configure and deploy Lockdown for AWS.  If not please reach out for support.</p>
+<p>Let's configure how Lockdown for AWS will run.  Open a code editor and edit the <code>serverless.yml</code> file.  At the bottom of the file is a set of variables we will edit.</p>
+<p>These variables are between the
+#Start customization here
+and
+#End customization here
+markers
+Locate this at the end of the file and then set the values as needed.  The details on the settings are below:</p>
+<p>baseName - Whatever value you select for the basename will be prefaced in front of all objects that Lockdown for AWS creates.  Any value can be used here, but this would be of particular importance if you want to deploy Lockdown for AWS multiple times in one AWS account.</p>
+<p>stage - This can be left as is or you can provide a string value.  If you leave the provided value it will default to dev if no stage is provided on the command line.  You can provide a --stage to set it at install time.</p>
+<p>minimum_threat_score_for_remediation - is the required threat score that a host will need to hit before it is eligible for remediation.  The next score check must also pass.</p>
+<p>minimum_certainty_score_for_remediation - is the required certainty score a host must score before it is eligible for remediation.  Assuming that both score checks pass, we consult the next setting.</p>
+<p>remediation_type - How would you like Lockdown for AWS to remediate this host.  Either 'stop' or 'terminate' can be set.</p>
+<p>securityHubCustomActionARN - This will be configured in a later step.</p>
+<p>snsRemediationNotificationARN - A SNS ARN that you would like to have notifications of actions that Lockdown for AWS takes.  Not required.</p>
+<ol start="11">
+<li>Once this file is configured, you can deploy Lockdown for AWS.  To deploy it simply run</li>
+</ol>
+<p><code>sls deploy -v</code></p>
+<p>NOTE - I recommend that you export the profile you are using for deployment into your shell.  If you do this then Serverless Framework will deploy without specifying a profile on the command line.  You can do something like:
+<code>export AWS_PROFILE=&lt;profile_name&gt;</code></p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+14.56.26.png" alt="deployment"></p>
+<ol start="12">
+<li>You will know that your deploy is complete when you see something like.</li>
+</ol>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.01.05.png" alt="finished deployment"></p>
+<p>Lockdown for AWS is now deployed.  The last step we need to perform is to configure it inside the AWS console.</p>
+<p>Login to the AWS console using the same account that you deployed into in the previous steps.  Then go to Security Hub.</p>
+<ol start="13">
+<li>Once in Security Hub select Settings and then Custom Actions.</li>
+</ol>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.10.57.png" alt=""></p>
+<p>14.Then click on Create custom action.  Then fill out the form that appears.  For example:</p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.14.17.png" alt=""></p>
+<ol start="15">
+<li>After you click Create custom action you will now see that acton added to the list of custom actions.  Make sure that you copy the ARN of your new action to the clipboard.</li>
+</ol>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.18.15.png" alt=""></p>
+<p>Now go to CloudWatch Events.  Once in CloudWatch Events we are going to create a new rule.</p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.22.10.png" alt=""></p>
+<ol start="16">
+<li>Select Create Rule.</li>
+</ol>
+<p>On the left next to Event Pattern Preview select edit.</p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.25.59.png" alt=""></p>
+<p>Paste in this</p>
+<p>{
+&quot;source&quot;: [
+&quot;aws.securityhub&quot;
+],
+&quot;detail-type&quot;: [
+&quot;Security Hub Findings - Custom Action&quot;
+],
+&quot;resources&quot;: [
+&quot;arn:aws:securityhub:us-west-2:123456789012:action/custom/test-action1&quot;
+]
+}</p>
+<p>under the resources section above, replace this with the ARN that you copied in step #15 above.</p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.31.45.png" alt="">
+Then click Save.</p>
+<ol>
+<li>
+<p>Then on the same screen under Targets click Add target*</p>
+</li>
+<li>
+<p>Make sure that you have selected Lambda Function on the dropdown select the function that contains queueWriter in the name.</p>
+</li>
+</ol>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.36.06.png" alt=""> Then click on Configure details.</p>
+<ol start="19">
+<li>On the next screen enter values for Name and Description.  Make sure that enabled is selected.
+<img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.38.57.png" alt=""></li>
+</ol>
+<p>Then click on Create rule.</p>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-21+15.40.35.png" alt=""></p>
+<h3 id="setup-and-configuration-is-complete">Setup and Configuration is complete.</h3>
+<h3 id="testing">Testing</h3>
+<p><strong>NOTE Vectra recommends that you only test Lockdown for AWS when you have the remediation_type set to stop.  DO NOT test Lockdown for AWS when you are using the remediation_type of terminate unless you understand EXACTLY what resource(s) will be terminated.</strong></p>
+<ol start="20">
+<li>To test Lockdown for AWS, you can simply go to Security Hub in the Amazon AWS console and locate a host that has a Cognito Detect finding associated with it.  To test the shutdown of that host, click the checkbox next to the finding and then select the Actions button.  Select Lockdown for AWS.</li>
+</ol>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-22+11.47.22.png" alt=""></p>
+<ol start="21">
+<li>You can now go back to the EC2 console and see that the host related to the finding is shutting down.</li>
+</ol>
+<p><img src="https://vectra-public-files.s3-us-west-2.amazonaws.com/images/Screenshot+2020-03-22+11.54.12.png" alt=""></p>
+<h3 id="troubleshooting">Troubleshooting</h3>
+
+    </body>
+    </html>

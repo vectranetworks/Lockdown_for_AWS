@@ -1,7 +1,9 @@
+# noqa
 try:
     import unzip_requirements
 except ImportError:
     pass
+# required for serverless framework to un-compress binaries
 
 import json
 import os
@@ -79,4 +81,3 @@ def main(event, context):
         "body": json.dumps(response),
         "statusCode": 200,
     }
-

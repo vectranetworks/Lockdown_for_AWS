@@ -1,7 +1,10 @@
+# noqa
 try:
     import unzip_requirements
 except ImportError:
     pass
+# required for serverless framework to un-compress binaries
+
 
 import json
 import os
